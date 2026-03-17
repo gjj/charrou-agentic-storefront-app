@@ -14,6 +14,7 @@
 import { createMCPClient } from "@ai-sdk/mcp";
 import { openai } from "@ai-sdk/openai";
 import { stepCountIs, ToolLoopAgent } from "ai";
+import { z } from "zod";
 import type { Accepts } from "aixyz/accepts";
 
 // ---------------------------------------------------------------------------
@@ -32,7 +33,51 @@ const mcpClient = await createMCPClient({
   transport: { type: "http", url: STOREFRONT_MCP_URL },
 });
 
-const storefrontTools = await mcpClient.tools();
+// Provide explicit schemas for the two read-only tools.
+// This overrides the schemas advertised by Shopify's MCP, letting us:
+//   1. Strip the `after` cursor field — the root cause of GPT hallucinating
+//      "Malformed cursor" pagination calls on first-page queries.
+//   2. Hide cart/checkout tools (get_cart, update_cart, get_product_details)
+//      entirely by only destructuring what we want.
+const { search_shop_catalog, search_shop_policies_and_faqs } = await mcpClient.tools({
+  schemas: {
+    search_shop_catalog: {
+      inputSchema: z.object({
+        query: z.string().describe("Natural language search query for products, e.g. 'bak kwa' or 'gifts under $50'"),
+        context: z.string().describe("Customer context: budget, preferences, occasion, demographics, or other relevant details"),
+        filters: z
+          .array(
+            z.object({
+              available: z.boolean().optional().describe("Filter to in-stock products only"),
+              price: z
+                .object({
+                  min: z.number().optional().describe("Minimum price (SGD)"),
+                  max: z.number().optional().describe("Maximum price (SGD)"),
+                })
+                .optional(),
+              productType: z.string().optional(),
+              productVendor: z.string().optional(),
+              tag: z.string().optional(),
+            }),
+          )
+          .optional()
+          .describe("Filters from available_filters in a previous response. Do not guess filter values."),
+        limit: z.number().int().min(1).max(250).default(10).optional(),
+        country: z.string().optional().describe("ISO 3166-1 alpha-2 country code, e.g. 'SG'"),
+        language: z.string().optional().describe("ISO 639-1 language code, e.g. 'EN'"),
+        // `after` intentionally omitted — do not add pagination on first call
+      }),
+    },
+    search_shop_policies_and_faqs: {
+      inputSchema: z.object({
+        query: z.string().describe("Natural language question about store policies, shipping, returns, or FAQs"),
+        context: z.string().optional().describe("Additional context about the customer or situation"),
+      }),
+    },
+  },
+});
+
+const storefrontTools = { search_shop_catalog, search_shop_policies_and_faqs };
 
 // ---------------------------------------------------------------------------
 // System prompt — strict scope: read-only storefront only
