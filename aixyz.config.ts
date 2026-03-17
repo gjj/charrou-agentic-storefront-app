@@ -45,6 +45,19 @@ const config: AixyzConfig = {
         "What payment methods do you accept?",
       ],
     },
+    {
+      id: "checkout",
+      name: "Checkout",
+      description:
+        "Purchase products from Charrou.sg via Shopify UCP. Collects buyer info, creates a checkout session, and returns a secure payment URL. Supports create, get, update, and cancel operations via the Shopify Checkout MCP (checkout.charrou.sg/api/ucp/mcp).",
+      tags: ["checkout", "purchase", "buy", "order", "payment", "ucp", "shopify"],
+      examples: [
+        "I want to buy the Frozen Pork Jowl Char Siew",
+        "Add 1x Crystal Honey Char Siew 950g to my cart and check out",
+        "I'd like to order a birthday cake — how do I pay?",
+        "Cancel my checkout session",
+      ],
+    },
   ],
 };
 
