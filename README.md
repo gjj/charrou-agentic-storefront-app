@@ -7,9 +7,9 @@ Connects to the Shopify Storefront MCP at `https://charrou.sg/api/mcp` to browse
 ## Setup
 
 ```bash
-# 1. Copy env file and add your GitHub token
+# 1. Copy env file and add your OpenAI API key
 cp .env.example .env.local
-# Edit .env.local and set GITHUB_TOKEN
+# Edit .env.local and set OPENAI_API_KEY
 
 # 2. Install dependencies
 bun install
@@ -44,5 +44,5 @@ See `app/lib/pricing.ts` for the utility functions.
 
 ## Model
 
-Claude Sonnet 4.7 via [GitHub Models](https://github.com/marketplace/models).
-Requires a `GITHUB_TOKEN` with access to GitHub Models.
+GPT-5.2 via [OpenAI](https://platform.openai.com).
+Requires an `OPENAI_API_KEY` in `.env.local`.
