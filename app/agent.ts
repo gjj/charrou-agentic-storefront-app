@@ -100,12 +100,12 @@ const checkout_create = tool({
     "Use this when the buyer is ready to purchase. " +
     "Returns a continue_url — send this to the buyer so they can complete payment securely on Charrou's checkout page. " +
     "You must first search the catalog to obtain the product variant ID (a Shopify GID like 'gid://shopify/ProductVariant/...').",
-  parameters: z.object({
+  inputSchema: z.object({
     variantId: z
       .string()
       .describe("Shopify ProductVariant GID, e.g. 'gid://shopify/ProductVariant/12345678901'"),
     quantity: z.number().int().min(1).default(1).describe("Number of units to purchase"),
-    buyerEmail: z.string().email().describe("Buyer's email address for order confirmation"),
+    buyerEmail: z.email().describe("Buyer's email address for order confirmation"),
     destination: shippingDestinationSchema.describe("Shipping destination for the order"),
   }),
   execute: async ({ variantId, quantity, buyerEmail, destination }) => {
@@ -130,7 +130,7 @@ const checkout_get = tool({
   description:
     "Retrieve the current state of an existing checkout session. " +
     "Use this to check status, verify totals, or confirm if checkout is ready for payment.",
-  parameters: z.object({
+  inputSchema: z.object({
     checkoutId: z.string().describe("The checkout session ID returned by checkout_create"),
   }),
   execute: async ({ checkoutId }) => {
@@ -150,11 +150,11 @@ const checkout_update = tool({
   description:
     "Update an existing checkout session with new line items or shipping information. " +
     "WARNING: This replaces the entire checkout state — always include all fields (line_items, buyer, destination).",
-  parameters: z.object({
+  inputSchema: z.object({
     checkoutId: z.string().describe("The checkout session ID to update"),
     variantId: z.string().describe("Shopify ProductVariant GID"),
     quantity: z.number().int().min(1).describe("Updated quantity"),
-    buyerEmail: z.string().email().describe("Buyer's email address"),
+    buyerEmail: z.email().describe("Buyer's email address"),
     destination: shippingDestinationSchema.describe("Updated shipping destination"),
   }),
   execute: async ({ checkoutId, variantId, quantity, buyerEmail, destination }) => {
@@ -179,7 +179,7 @@ const checkout_cancel = tool({
   description:
     "Cancel an active checkout session. Use when a buyer abandons or explicitly cancels. " +
     "Cancelled checkouts cannot be resumed — start a new session if needed.",
-  parameters: z.object({
+  inputSchema: z.object({
     checkoutId: z.string().describe("The checkout session ID to cancel"),
   }),
   execute: async ({ checkoutId }) => {
@@ -261,4 +261,13 @@ export default new ToolLoopAgent({
   instructions,
   tools: allTools,
   stopWhen: stepCountIs(15),
+  onStepFinish: (step) => {
+    for (const call of step.toolCalls ?? []) {
+      console.log(`[tool] ${call.toolName}`, JSON.stringify((call as Record<string, unknown>).input ?? (call as Record<string, unknown>).args, null, 2));
+    }
+    for (const result of step.toolResults ?? []) {
+      console.log(`[tool result] ${result.toolName}`, JSON.stringify((result as Record<string, unknown>).output ?? (result as Record<string, unknown>).result, null, 2));
+    }
+    if (step.text) console.log(`[agent]\n${step.text}`);
+  },
 });

@@ -11,9 +11,12 @@ const SHOP_DOMAIN = "checkout.charrou.sg";
 const UCP_ENDPOINT = `https://${SHOP_DOMAIN}/api/ucp/mcp`;
 const AUTH_ENDPOINT = "https://api.shopify.com/auth/access_token";
 
-// The public UCP agent profile URI for this agent (served via /.well-known/ucp)
-export const AGENT_PROFILE_URI =
-  "https://charrou-agentic-storefront-app.vercel.app/.well-known/ucp";
+// The public UCP agent profile URI for this agent (served via /.well-known/ucp).
+// Must be publicly reachable — Shopify fetches it during capability negotiation.
+// Set AGENT_BASE_URL in .env.local to a tunnel URL (e.g. ngrok) for local dev.
+export const AGENT_PROFILE_URI = `${
+  process.env.AGENT_BASE_URL ?? "https://charrou-agentic-storefront-app.vercel.app"
+}/.well-known/ucp`;
 
 // ---------------------------------------------------------------------------
 // Auth — fetch + cache a JWT access token (60-min TTL)
@@ -63,6 +66,9 @@ export async function getAccessToken(): Promise<string> {
     expiresAt: now + data.expires_in * 1000,
   };
 
+  console.log(`[auth] token scope: ${(JSON.parse(atob(data.access_token.split(".")[1])) as Record<string, unknown>).scopes ?? "unknown"}`);
+  console.log(`[auth] token expires in: ${data.expires_in}s`);
+
   return cachedToken.token;
 }
 
@@ -95,6 +101,8 @@ export async function callUcpTool<T = unknown>(
     },
   };
 
+  console.log(`[ucp] → ${toolName}`, JSON.stringify(body.params.arguments, null, 2));
+
   const res = await fetch(UCP_ENDPOINT, {
     method: "POST",
     headers: {
@@ -105,7 +113,9 @@ export async function callUcpTool<T = unknown>(
   });
 
   if (!res.ok) {
-    throw new Error(`UCP request failed: ${res.status} ${await res.text()}`);
+    const text = await res.text();
+    console.error(`[ucp] ✗ ${toolName} HTTP ${res.status}:`, text);
+    throw new Error(`UCP request failed: ${res.status} ${text}`);
   }
 
   const data = await res.json() as {
@@ -114,12 +124,14 @@ export async function callUcpTool<T = unknown>(
   };
 
   if (data.error) {
+    console.error(`[ucp] ✗ ${toolName} error ${data.error.code}:`, data.error.message, data.error.data ?? "");
     throw new Error(
       `UCP error ${data.error.code}: ${data.error.message}` +
         (data.error.data ? ` — ${JSON.stringify(data.error.data)}` : "")
     );
   }
 
+  console.log(`[ucp] ← ${toolName}`, JSON.stringify(data.result?.structuredContent, null, 2));
   return data.result!.structuredContent;
 }
 
