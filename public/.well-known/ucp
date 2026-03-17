@@ -1,0 +1,19 @@
+{
+  "name": "Charrou Agentic Storefront",
+  "version": "2026-01-23",
+  "url": "https://charrou-agentic-storefront-app.vercel.app",
+  "capabilities": {
+    "dev.ucp.shopping.checkout": [
+      {
+        "version": "2026-01-23",
+        "spec": "https://ucp.dev/specs/shopping/checkout"
+      }
+    ],
+    "dev.ucp.shopping.fulfillment": [
+      {
+        "version": "2026-01-23",
+        "spec": "https://ucp.dev/specs/shopping/fulfillment"
+      }
+    ]
+  }
+}
