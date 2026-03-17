@@ -1,0 +1,7 @@
+node_modules/
+.aixyz/
+.vercel/
+.env.local
+.env.*.local
+dist/
+*.js.map
