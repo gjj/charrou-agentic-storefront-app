@@ -7,7 +7,7 @@
  * Docs: https://shopify.dev/docs/agents/checkout/mcp
  */
 
-const SHOP_DOMAIN = "checkout.charrou.sg";
+const SHOP_DOMAIN = "charrou.sg";
 const UCP_ENDPOINT = `https://${SHOP_DOMAIN}/api/ucp/mcp`;
 const AUTH_ENDPOINT = "https://api.shopify.com/auth/access_token";
 
@@ -101,7 +101,7 @@ export async function callUcpTool<T = unknown>(
     },
   };
 
-  console.log(`[ucp] → ${toolName}`, JSON.stringify(body.params.arguments, null, 2));
+  console.log(`[ucp] → ${toolName}\nheaders: ${JSON.stringify({ "Content-Type": "application/json", Authorization: `Bearer ${token.slice(0, 20)}...` }, null, 2)}\nbody: ${JSON.stringify(body, null, 2)}`);
 
   const res = await fetch(UCP_ENDPOINT, {
     method: "POST",
